@@ -41,9 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guanfancy.app.R
-import com.guanfancy.app.ui.theme.FoodGreen
-import com.guanfancy.app.ui.theme.FoodRed
-import com.guanfancy.app.ui.theme.FoodYellow
+import com.guanfancy.app.ui.components.FoodZoneExplanation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -259,84 +257,5 @@ private fun ScheduleConfigStep(
 
 @Composable
 private fun FoodZoneExplanationStep() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Food Intake Zones",
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Guanfacine interacts with food. Avoid eating close to intake time:",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = FoodGreen.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "●",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = FoodGreen
-                )
-                Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text("Green Zone", style = MaterialTheme.typography.titleMedium)
-                    Text("More than 5 hours before intake - Eating is fine", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = FoodYellow.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "●",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = FoodYellow
-                )
-                Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text("Yellow Zone", style = MaterialTheme.typography.titleMedium)
-                    Text("3-5 hours before intake - Caution advised", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Card(
-            colors = CardDefaults.cardColors(containerColor = FoodRed.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "●",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = FoodRed
-                )
-                Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text("Red Zone", style = MaterialTheme.typography.titleMedium)
-                    Text("Less than 3 hours before intake - Avoid eating", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-    }
+    FoodZoneExplanation()
 }
