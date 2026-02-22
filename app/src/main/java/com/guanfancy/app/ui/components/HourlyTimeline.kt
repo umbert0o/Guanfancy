@@ -41,7 +41,8 @@ import kotlinx.datetime.toLocalDateTime
 data class HourlyTimelineData(
     val date: LocalDate,
     val intakes: List<MedicationIntake>,
-    val currentTime: Instant
+    val currentTime: Instant,
+    val previousDayIntake: MedicationIntake? = null
 )
 
 @Composable
@@ -53,6 +54,7 @@ fun HourlyTimeline(
     val timeZone = TimeZone.currentSystemDefault()
     val nextIntake = data.intakes.firstOrNull { !it.isCompleted && it.scheduledTime > data.currentTime }
     val intakeHour = nextIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
+    val previousIntakeHour = data.previousDayIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
 
     val currentTimeLocal = data.currentTime.toLocalDateTime(timeZone)
     val isToday = currentTimeLocal.date == data.date
@@ -64,7 +66,7 @@ fun HourlyTimeline(
                 hour = hour,
                 isIntakeHour = hour == intakeHour,
                 isCurrentHour = isToday && hour == currentHour,
-                foodZone = calculateFoodZone(hour, intakeHour),
+                foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour),
                 intakeMinute = if (hour == intakeHour) {
                     nextIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
                 } else 0,
@@ -74,14 +76,42 @@ fun HourlyTimeline(
     }
 }
 
-private fun calculateFoodZone(hour: Int?, intakeHour: Int?): FoodZone {
-    if (intakeHour == null || hour == null) return FoodZone.GREEN
+private fun calculateFoodZone(hour: Int?, intakeHour: Int?, previousIntakeHour: Int?): FoodZone {
+    if (hour == null) return FoodZone.GREEN
 
-    return when {
-        hour < intakeHour - GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE -> FoodZone.GREEN
-        hour < intakeHour - GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE -> FoodZone.YELLOW
-        else -> FoodZone.RED
-    }
+    val preIntakeZone = if (intakeHour != null) {
+        when {
+            hour < intakeHour - GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE -> FoodZone.GREEN
+            hour < intakeHour - GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE -> FoodZone.YELLOW
+            hour < intakeHour -> FoodZone.RED
+            hour == intakeHour -> FoodZone.RED
+            else -> {
+                val hoursAfterIntake = hour - intakeHour
+                when {
+                    hoursAfterIntake < GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
+                    hoursAfterIntake < GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+                    else -> FoodZone.GREEN
+                }
+            }
+        }
+    } else null
+
+    val postIntakeZone = if (previousIntakeHour != null) {
+        val hoursSincePreviousIntake = (24 - previousIntakeHour) + hour
+        when {
+            hoursSincePreviousIntake < GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
+            hoursSincePreviousIntake < GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+            else -> FoodZone.GREEN
+        }
+    } else null
+
+    return listOfNotNull(preIntakeZone, postIntakeZone).minByOrNull { zone ->
+        when (zone) {
+            FoodZone.RED -> 0
+            FoodZone.YELLOW -> 1
+            FoodZone.GREEN -> 2
+        }
+    } ?: FoodZone.GREEN
 }
 
 @Composable

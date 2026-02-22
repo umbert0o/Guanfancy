@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guanfancy.app.ui.components.HourlyTimeline
-import com.guanfancy.app.ui.components.HourlyTimelineData
 import com.guanfancy.app.ui.components.TimelineLegend
 import kotlinx.datetime.LocalDate
 
@@ -68,11 +67,7 @@ fun CalendarScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             HourlyTimeline(
-                data = HourlyTimelineData(
-                    date = state.selectedDate,
-                    intakes = state.intakes,
-                    currentTime = state.currentTime
-                ),
+                data = state.toHourlyTimelineData(),
                 modifier = Modifier.weight(1f)
             )
         }
