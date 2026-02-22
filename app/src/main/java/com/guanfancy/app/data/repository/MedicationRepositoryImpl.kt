@@ -59,6 +59,12 @@ class MedicationRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun updateScheduledTime(intakeId: Long, newScheduledTime: Instant) {
+        val intake = intakeDao.getIntakeById(intakeId) ?: return
+        val updatedIntake = intake.copy(scheduledTimeEpoch = newScheduledTime.toEpochMilliseconds())
+        intakeDao.updateIntake(updatedIntake)
+    }
+
     override suspend fun submitFeedback(intakeId: Long, feedback: FeedbackType, feedbackTime: Instant) {
         intakeDao.submitFeedback(
             id = intakeId,

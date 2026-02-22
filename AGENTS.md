@@ -1,6 +1,6 @@
 # Guanfancy - Android Medication Tracking App
 
-An Android app for tracking Guanfacine medication intake with food zone timing indicators.
+Android app for tracking Guanfacine medication intake with food zone timing indicators.
 
 ## Build Commands
 
@@ -11,22 +11,19 @@ An Android app for tracking Guanfacine medication intake with food zone timing i
 # Build release APK
 ./gradlew assembleRelease
 
-# Clean build
-./gradlew clean
-
 # Run lint checks
 ./gradlew lint
 
-# Run unit tests (all)
+# Run all unit tests
 ./gradlew test
 
-# Run unit tests for specific test class
+# Run specific test class
 ./gradlew test --tests "com.guanfancy.app.ExampleTest"
 
 # Run single test method
 ./gradlew test --tests "com.guanfancy.app.ExampleTest.testMethodName"
 
-# Run Android instrumentation tests (requires connected device/emulator)
+# Run instrumentation tests (requires device/emulator)
 ./gradlew connectedAndroidDebugTest
 
 # Run specific instrumentation test
@@ -39,42 +36,38 @@ An Android app for tracking Guanfacine medication intake with food zone timing i
 app/src/main/java/com/guanfancy/app/
 ├── data/                    # Data layer
 │   ├── local/              # Room database, DAOs, entities
-│   │   ├── dao/
-│   │   └── entity/
 │   ├── notifications/      # AlarmManager, notification helpers
 │   ├── preferences/        # DataStore preferences
 │   └── repository/         # Repository implementations
 ├── di/                      # Hilt DI modules
 ├── domain/                  # Business logic layer
-│   ├── model/              # Domain models, constants
+│   ├── model/              # Domain models, constants, calculators
 │   └── repository/         # Repository interfaces
 ├── ui/                      # Presentation layer
 │   ├── components/         # Reusable Compose components
-│   ├── navigation/         # Navigation graph, screens
+│   ├── navigation/         # Navigation graph, screen destinations
 │   ├── screens/            # Screen composables + ViewModels
 │   └── theme/              # Material3 theme, colors, typography
-├── GuanfancyApplication.kt # Hilt application class
-└── MainActivity.kt         # Single activity
+├── GuanfancyApplication.kt
+└── MainActivity.kt
 ```
 
 ## Architecture
 
-- **Clean Architecture**: Separation into data/domain/ui layers
+- **Clean Architecture**: data/domain/ui layer separation
 - **MVVM**: ViewModels expose StateFlow to Compose UI
 - **Repository Pattern**: Domain interfaces, data implementations
 - **Dependency Injection**: Hilt with @HiltViewModel, @Inject, @Singleton
-- **Single Activity**: Navigation Compose for screen navigation
+- **Single Activity**: Navigation Compose with type-safe destinations
 
-## Code Style Guidelines
+## Code Style
 
 ### Imports
 - Order: Android/Jetpack → Kotlin → Third-party → Local packages
-- No unused imports
-- No wildcard imports
+- No unused imports, no wildcard imports
 
 ### Formatting
-- 4-space indentation
-- Maximum line length: 120 characters
+- 4-space indentation, 120 char max line length
 - Blank line between sections (imports, class members)
 - Trailing lambda for Composable function parameters
 
@@ -82,49 +75,82 @@ app/src/main/java/com/guanfancy/app/
 - Use `data class` for models
 - Prefer `val` over `var`
 - Use nullable types (`?`) explicitly where null is valid
-- Use `!!` only when absolutely certain of non-null
 - Prefer `?:` elvis operator for null defaults
 
 ### Naming Conventions
 - **Classes**: PascalCase (`DashboardViewModel`)
 - **Functions**: camelCase (`markIntakeTaken`)
 - **Properties**: camelCase (`nextIntake`)
-- **Composables**: PascalCase, suffixed with `Screen` or descriptive name (`DashboardScreen`, `NextIntakeCard`)
-- **State classes**: Screen name + `State` (`DashboardState`)
-- **Constants**: SCREAMING_SNAKE_CASE in companion objects or objects
-- **Private backing properties**: Prefix with underscore (`_state`)
-
-### Compose Guidelines
-- Use `StateFlow` + `collectAsStateWithLifecycle()` for state in ViewModels
-- Mark composables with `@Composable` annotation on separate line
-- Use `@OptIn(ExperimentalMaterial3Api::class)` for experimental APIs
-- Private composables at bottom of file
-- Pass `modifier: Modifier = Modifier` as last parameter to public composables
-- Use `Modifier` chain pattern (one modifier per line for complex chains)
+- **Composables**: PascalCase with `Screen` suffix or descriptive name (`DashboardScreen`, `NextIntakeCard`)
+- **State classes**: Screen name + `State` (`DashboardState`) - defined at file top, outside ViewModel
+- **Private backing properties**: Underscore prefix (`_state`)
+- **Constants**: SCREAMING_SNAKE_CASE in companion objects
+- **Default values**: `val DEFAULT = ...` in companion object
 
 ### State Management
 ```kotlin
-// ViewModel pattern
-private val _state = MutableStateFlow(State())
-val state: StateFlow<State> = _state.asStateFlow()
+// State class at top of file (not nested)
+data class DashboardState(
+    val nextIntake: MedicationIntake? = null,
+    val isLoading: Boolean = true
+)
 
-// Usage in Composable
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
+    private val repository: MedicationRepository
+) : ViewModel() {
+    private val _state = MutableStateFlow(DashboardState())
+    val state: StateFlow<DashboardState> = _state.asStateFlow()
+    
+    // Prefer update{} for partial updates
+    fun setLoading() = _state.update { it.copy(isLoading = true) }
+}
+
+// In Composable
 val state by viewModel.state.collectAsStateWithLifecycle()
 ```
 
+### Compose Guidelines
+- `@OptIn(ExperimentalMaterial3Api::class)` on same line as `@Composable`
+- `modifier: Modifier = Modifier` as last parameter
+- Private composables at bottom of file
+- Navigation via callback lambdas, never pass NavHostController to screens
+
 ### Repository Pattern
-- Domain: `interface MedicationRepository` in `domain/repository/`
-- Data: `class MedicationRepositoryImpl` in `data/repository/`
-- Bind via Hilt `@Module` with `@Binds`
+- Interface in `domain/repository/`
+- Implementation in `data/repository/` with `@Singleton`
+- Map entity flows to domain at repository boundary:
+```kotlin
+override fun getAllIntakes(): Flow<List<MedicationIntake>> =
+    dao.getAllIntakes().map { entities -> entities.map { it.toDomain() } }
+```
 
 ### Entity/Domain Mapping
 - Entity classes in `data/local/entity/`
 - Domain models in `domain/model/`
-- Extension functions `toDomain()` and `toEntity()` in entity file
+- Mappers in separate file `[Entity]Mappers.kt`:
+```kotlin
+fun IntakeEntity.toDomain(): MedicationIntake = MedicationIntake(...)
+fun MedicationIntake.toEntity(): IntakeEntity = IntakeEntity(...)
+```
+
+### Hilt DI Modules
+- Repository bindings: abstract class with `@Binds`
+- Database/DAO provisioning: object with `@Provides`
+- Both use `@InstallIn(SingletonComponent::class)`
+
+### Navigation
+- Type-safe with Kotlin serialization:
+```kotlin
+sealed interface Screen {
+    @Serializable data object Dashboard : Screen
+    @Serializable data class Feedback(val intakeId: Long) : Screen
+}
+```
 
 ### Error Handling
-- Use nullable returns for expected absence (`getIntakeById(): MedicationIntake?`)
-- Use `Result<T>` for operations that can fail
+- Nullable returns for expected absence (`getIntakeById(): MedicationIntake?`)
+- `Result<T>` for operations that can fail
 - Log errors, don't silently catch exceptions
 
 ### Comments
@@ -133,43 +159,20 @@ val state by viewModel.state.collectAsStateWithLifecycle()
 
 ## Tech Stack
 
-- **Kotlin**: 2.1.0
-- **Compose BOM**: 2025.08.00
-- **Material3**: For UI components
-- **Navigation Compose**: 2.9.1
-- **Hilt**: 2.57.1 for DI
-- **Room**: 2.7.2 for local database
-- **DataStore**: 1.1.7 for preferences
-- **kotlinx-datetime**: 0.6.2 for date/time handling
-- **WorkManager**: 2.10.2 for background tasks
+| Library | Version |
+|---------|---------|
+| Kotlin | 2.1.0 |
+| Compose BOM | 2025.08.00 |
+| Material3 | (from BOM) |
+| Navigation Compose | 2.9.1 |
+| Hilt | 2.57.1 |
+| Room | 2.7.2 |
+| DataStore | 1.1.7 |
+| kotlinx-datetime | 0.6.2 |
+| WorkManager | 2.10.2 |
+| kotlinx-serialization | 1.8.0 |
 
 ## Rules
 
-1) Ask questions if you have to and something is unclear!
-2) Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
-
-## Good Software Architecture (Frontend + Backend)
-
-- **Modularity**  
-  Split into small, independent parts.
-
-- **Separation of Concerns**  
-  Keep different responsibilities (UI, logic, data) clearly apart.
-
-- **Basic Layering**  
-  Use layers: presentation/UI → services/business logic → data access.
-
-- **Never let UI/frontend directly access the database**  
-  Always go through services or APIs instead.
-
-- **Scalability**  
-  Design to handle growth easily.
-
-- **Security**  
-  Protect from the beginning.
-
-- **Performance**  
-  Keep it fast and efficient.
-
-- **Maintainability**  
-  Write clean, understandable, changeable code.
+1. Ask questions if something is unclear
+2. Use Context7 MCP for library/API documentation without being asked

@@ -14,6 +14,7 @@ interface MedicationRepository {
     suspend fun insertIntake(intake: MedicationIntake): Long
     suspend fun updateIntake(intake: MedicationIntake)
     suspend fun markIntakeTaken(intakeId: Long, actualTime: Instant)
+    suspend fun updateScheduledTime(intakeId: Long, newScheduledTime: Instant)
     suspend fun submitFeedback(intakeId: Long, feedback: FeedbackType, feedbackTime: Instant)
     suspend fun deleteIntake(intake: MedicationIntake)
     suspend fun deleteAllIntakes()
