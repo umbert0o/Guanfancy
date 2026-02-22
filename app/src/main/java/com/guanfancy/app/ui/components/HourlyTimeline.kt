@@ -53,9 +53,19 @@ fun HourlyTimeline(
     onHourTap: (Int) -> Unit = {}
 ) {
     val timeZone = TimeZone.currentSystemDefault()
-    val scheduledIntake = data.intakes.minByOrNull { it.scheduledTime }
-    val intakeHour = scheduledIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
-    val previousIntakeHour = data.previousDayIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
+    val primaryIntake = data.intakes.minByOrNull { it.scheduledTime }
+    val displayTime = if (primaryIntake?.isCompleted == true && primaryIntake.actualTime != null) {
+        primaryIntake.actualTime
+    } else {
+        primaryIntake?.scheduledTime
+    }
+    val intakeHour = displayTime?.toLocalDateTime(timeZone)?.time?.hour
+    val previousIntakeDisplayTime = if (data.previousDayIntake?.isCompleted == true && data.previousDayIntake.actualTime != null) {
+        data.previousDayIntake.actualTime
+    } else {
+        data.previousDayIntake?.scheduledTime
+    }
+    val previousIntakeHour = previousIntakeDisplayTime?.toLocalDateTime(timeZone)?.time?.hour
 
     val currentTimeLocal = data.currentTime.toLocalDateTime(timeZone)
     val isToday = currentTimeLocal.date == data.date
@@ -66,10 +76,11 @@ fun HourlyTimeline(
             HourRow(
                 hour = hour,
                 isIntakeHour = hour == intakeHour,
+                isCompleted = primaryIntake?.isCompleted == true,
                 isCurrentHour = isToday && hour == currentHour,
                 foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour, data.foodZoneConfig),
                 intakeMinute = if (hour == intakeHour) {
-                    scheduledIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
+                    displayTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
                 } else 0,
                 onTap = { onHourTap(hour) }
             )
@@ -124,6 +135,7 @@ private fun calculateFoodZone(
 private fun HourRow(
     hour: Int,
     isIntakeHour: Boolean,
+    isCompleted: Boolean,
     isCurrentHour: Boolean,
     foodZone: FoodZone,
     intakeMinute: Int,
@@ -182,7 +194,8 @@ private fun HourRow(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Intake at ${hour.toString().padStart(2, '0')}:${intakeMinute.toString().padStart(2, '0')}",
+                            text = if (isCompleted) "Taken at ${hour.toString().padStart(2, '0')}:${intakeMinute.toString().padStart(2, '0')}"
+                                   else "Intake at ${hour.toString().padStart(2, '0')}:${intakeMinute.toString().padStart(2, '0')}",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White
                         )
