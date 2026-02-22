@@ -77,12 +77,9 @@ fun HourlyTimeline(
 private fun calculateFoodZone(hour: Int?, intakeHour: Int?): FoodZone {
     if (intakeHour == null || hour == null) return FoodZone.GREEN
 
-    val greenThreshold = intakeHour - GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE
-    val yellowThreshold = intakeHour - GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE
-
     return when {
-        hour < yellowThreshold -> FoodZone.GREEN
-        hour < intakeHour - 0 -> FoodZone.YELLOW
+        hour < intakeHour - GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE -> FoodZone.GREEN
+        hour < intakeHour - GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE -> FoodZone.YELLOW
         else -> FoodZone.RED
     }
 }
