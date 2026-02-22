@@ -85,7 +85,6 @@ class CalendarViewModel @Inject constructor(
             ).first()
 
             val lastIntakePreviousDay = previousDayIntakes
-                .filter { it.isCompleted }
                 .maxByOrNull { it.scheduledTime }
 
             medicationRepository.getIntakesBetween(startOfDay, endOfDay).collect { intakes ->

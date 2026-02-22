@@ -52,8 +52,8 @@ fun HourlyTimeline(
     onHourTap: (Int) -> Unit = {}
 ) {
     val timeZone = TimeZone.currentSystemDefault()
-    val nextIntake = data.intakes.firstOrNull { !it.isCompleted && it.scheduledTime > data.currentTime }
-    val intakeHour = nextIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
+    val scheduledIntake = data.intakes.minByOrNull { it.scheduledTime }
+    val intakeHour = scheduledIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
     val previousIntakeHour = data.previousDayIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.hour
 
     val currentTimeLocal = data.currentTime.toLocalDateTime(timeZone)
@@ -68,7 +68,7 @@ fun HourlyTimeline(
                 isCurrentHour = isToday && hour == currentHour,
                 foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour),
                 intakeMinute = if (hour == intakeHour) {
-                    nextIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
+                    scheduledIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
                 } else 0,
                 onTap = { onHourTap(hour) }
             )
@@ -88,8 +88,8 @@ private fun calculateFoodZone(hour: Int?, intakeHour: Int?, previousIntakeHour: 
             else -> {
                 val hoursAfterIntake = hour - intakeHour
                 when {
-                    hoursAfterIntake < GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
-                    hoursAfterIntake < GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+                    hoursAfterIntake <= GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
+                    hoursAfterIntake <= GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
                     else -> FoodZone.GREEN
                 }
             }
@@ -99,8 +99,8 @@ private fun calculateFoodZone(hour: Int?, intakeHour: Int?, previousIntakeHour: 
     val postIntakeZone = if (previousIntakeHour != null) {
         val hoursSincePreviousIntake = (24 - previousIntakeHour) + hour
         when {
-            hoursSincePreviousIntake < GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
-            hoursSincePreviousIntake < GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+            hoursSincePreviousIntake <= GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
+            hoursSincePreviousIntake <= GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
             else -> FoodZone.GREEN
         }
     } else null
