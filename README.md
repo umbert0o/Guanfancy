@@ -18,7 +18,7 @@ This app is NOT medical advice. It is a personal tracking tool only.
 - **Receive reminders** - Get notifications for scheduled intake times and feedback prompts
 - **Customize your schedule** - Configure intervals between intakes based on feedback type
 
-**Screenshots**
+
 <img alt="Landing Screen" height="500" src="_images/Guanfancy_Landing.png" title="Landing Screen"/>
 <img alt="Setup" height="500" src="_images/Guanfancy_Setup_Intake.png" title="Guanfancy Setup"/>
 <img alt="Calendar" height="500" src="_images/Guanfancy_Calendar_1.png" title="Guanfancy Calendar"/>
