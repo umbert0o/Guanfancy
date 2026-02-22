@@ -57,6 +57,6 @@ Guanfacine has a ~17 hour half-life, meaning it can accumulate in your system if
 
  Build & Run
 ```
-./gradlew 
+./gradlew assembleDebug
 ```
 *Requires Android SDK 35+.*
