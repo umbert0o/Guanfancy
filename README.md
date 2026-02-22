@@ -8,8 +8,6 @@ I've created this project with support of opencode (https://github.com/anomalyco
 ⚠️ Medical Disclaimer
 This app is NOT medical advice. It is a personal tracking tool only.
 
-![Landing Screen](_images/Guanfancy_Landing.png "Landing Screen")
-
 **What does this app?**
 
 - **Track your Guanfacine intake** - Log when you take your medication with a single tap
@@ -21,7 +19,9 @@ This app is NOT medical advice. It is a personal tracking tool only.
 - **Customize your schedule** - Configure intervals between intakes based on feedback type
 
 **Screenshots**
-| ![Setup](_images/Guanfancy_Setup_Intake.png "Guanfancy Setup") | ![Calendar](_images/Guanfancy_Calendar_1.png "Guanfancy Calendar") |
+<img alt="Landing Screen" height="500" src="_images/Guanfancy_Landing.png" title="Landing Screen"/>
+<img alt="Setup" height="500" src="_images/Guanfancy_Setup_Intake.png" title="Guanfancy Setup"/>
+<img alt="Calendar" height="500" src="_images/Guanfancy_Calendar_1.png" title="Guanfancy Calendar"/>
 
 **Supported Medications**
  Intuniv (Extended Release)
