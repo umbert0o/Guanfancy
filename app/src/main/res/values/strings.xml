@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Guanfancy</string>
+    <string name="channel_feedback">Medication Feedback</string>
+    <string name="channel_intake">Medication Intake Reminder</string>
+    <string name="notification_feedback_title">How are you feeling?</string>
+    <string name="notification_feedback_body">Tap to provide feedback on your medication.</string>
+    <string name="notification_intake_title">Time for your medication</string>
+    <string name="notification_intake_body">It\'s time to take Guanfacine.</string>
+</resources>
