@@ -3,6 +3,7 @@ package com.guanfancy.app.ui.screens.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.MedicationIntake
+import com.guanfancy.app.domain.model.MedicationType
 import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
@@ -10,7 +11,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -26,6 +26,7 @@ import javax.inject.Inject
 
 data class OnboardingState(
     val step: Int = 0,
+    val medicationType: MedicationType = MedicationType.DEFAULT,
     val selectedHour: Int = ScheduleConfig.DEFAULT.defaultIntakeTimeHour,
     val selectedMinute: Int = ScheduleConfig.DEFAULT.defaultIntakeTimeMinute,
     val scheduleConfig: ScheduleConfig = ScheduleConfig.DEFAULT,
@@ -40,6 +41,10 @@ class OnboardingViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(OnboardingState())
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
+
+    fun setMedicationType(type: MedicationType) {
+        _state.value = _state.value.copy(medicationType = type)
+    }
 
     fun setHour(hour: Int) {
         _state.value = _state.value.copy(selectedHour = hour)
@@ -75,7 +80,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun nextStep() {
         val currentStep = _state.value.step
-        if (currentStep < 3) {
+        if (currentStep < TOTAL_STEPS - 1) {
             _state.value = _state.value.copy(step = currentStep + 1)
         }
     }
@@ -101,6 +106,7 @@ class OnboardingViewModel @Inject constructor(
                 scheduledInstant = scheduledInstant.plus(1, DateTimeUnit.DAY, timeZone)
             }
 
+            settingsRepository.setMedicationType(_state.value.medicationType)
             settingsRepository.setCurrentIntakeTime(scheduledInstant)
             settingsRepository.setWarningAccepted(true)
             settingsRepository.setOnboardingCompleted(true)
@@ -120,5 +126,9 @@ class OnboardingViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = false)
             onComplete()
         }
+    }
+
+    companion object {
+        const val TOTAL_STEPS = 5
     }
 }

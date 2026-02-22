@@ -2,8 +2,10 @@ package com.guanfancy.app.ui.screens.calendar
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.guanfancy.app.domain.model.FoodZoneConfig
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.repository.MedicationRepository
+import com.guanfancy.app.domain.repository.SettingsRepository
 import com.guanfancy.app.ui.components.HourlyTimelineData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,21 +30,24 @@ data class CalendarState(
     val selectedDate: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date,
     val intakes: List<MedicationIntake> = emptyList(),
     val previousDayIntake: MedicationIntake? = null,
-    val currentTime: Instant = Clock.System.now()
+    val currentTime: Instant = Clock.System.now(),
+    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT
 ) {
     fun toHourlyTimelineData(): HourlyTimelineData {
         return HourlyTimelineData(
             date = selectedDate,
             intakes = intakes,
             currentTime = currentTime,
-            previousDayIntake = previousDayIntake
+            previousDayIntake = previousDayIntake,
+            foodZoneConfig = foodZoneConfig
         )
     }
 }
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val medicationRepository: MedicationRepository
+    private val medicationRepository: MedicationRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CalendarState())
@@ -71,6 +76,8 @@ class CalendarViewModel @Inject constructor(
 
     private fun loadIntakesForDate(date: LocalDate) {
         viewModelScope.launch {
+            val foodZoneConfig = settingsRepository.foodZoneConfig.first()
+            
             val timeZone = TimeZone.currentSystemDefault()
             val startOfDay = date.atTime(0, 0).toInstant(timeZone)
             val endOfDay = date.atTime(23, 59, 59, 999_999_999).toInstant(timeZone)
@@ -92,7 +99,8 @@ class CalendarViewModel @Inject constructor(
                     it.copy(
                         intakes = intakes,
                         previousDayIntake = lastIntakePreviousDay,
-                        currentTime = Clock.System.now()
+                        currentTime = Clock.System.now(),
+                        foodZoneConfig = foodZoneConfig
                     )
                 }
             }

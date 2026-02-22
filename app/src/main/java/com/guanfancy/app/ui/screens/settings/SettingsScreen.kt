@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.guanfancy.app.domain.model.MedicationType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +78,33 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            Text(
+                text = "Medication Type",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            MedicationType.entries.forEach { type ->
+                MedicationTypeCard(
+                    type = type,
+                    isSelected = state.medicationType == type,
+                    onClick = { viewModel.updateMedicationType(type) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Food zones: Red ${state.foodZoneConfig.redHoursAfter}h, Yellow ${state.foodZoneConfig.yellowHoursAfter}h after intake",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
                 text = "Schedule Configuration",
                 style = MaterialTheme.typography.titleMedium,
@@ -193,6 +223,50 @@ fun SettingsScreen(
                 text = "This will delete all medication data and reset all settings. You will need to go through the setup process again.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun MedicationTypeCard(
+    type: MedicationType,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Text(
+                text = type.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Text(
+                text = type.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                }
             )
         }
     }

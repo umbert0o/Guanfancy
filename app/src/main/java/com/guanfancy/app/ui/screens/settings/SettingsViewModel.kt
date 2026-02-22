@@ -2,6 +2,8 @@ package com.guanfancy.app.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.guanfancy.app.domain.model.FoodZoneConfig
+import com.guanfancy.app.domain.model.MedicationType
 import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
@@ -15,6 +17,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsState(
+    val medicationType: MedicationType = MedicationType.DEFAULT,
+    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT,
     val scheduleConfig: ScheduleConfig = ScheduleConfig.DEFAULT,
     val isLoading: Boolean = true,
     val showResetDialog: Boolean = false,
@@ -37,12 +41,28 @@ class SettingsViewModel @Inject constructor(
     private fun loadSettings() {
         viewModelScope.launch {
             val config = settingsRepository.scheduleConfig.first()
+            val medType = settingsRepository.medicationType.first()
+            val foodConfig = settingsRepository.foodZoneConfig.first()
             _state.update {
                 it.copy(
+                    medicationType = medType,
+                    foodZoneConfig = foodConfig,
                     scheduleConfig = config,
                     isLoading = false
                 )
             }
+        }
+    }
+
+    fun updateMedicationType(type: MedicationType) {
+        _state.update {
+            it.copy(
+                medicationType = type,
+                foodZoneConfig = type.getFoodZoneConfig()
+            )
+        }
+        viewModelScope.launch {
+            settingsRepository.setMedicationType(type)
         }
     }
 

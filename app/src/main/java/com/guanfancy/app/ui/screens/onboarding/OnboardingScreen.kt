@@ -20,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guanfancy.app.R
+import com.guanfancy.app.domain.model.MedicationType
 import com.guanfancy.app.ui.components.FoodZoneExplanation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,15 +92,19 @@ fun OnboardingScreen(
 
             when (state.step) {
                 0 -> WelcomeStep()
-                1 -> TimeSelectionStep(timePickerState)
-                2 -> ScheduleConfigStep(
+                1 -> MedicationTypeStep(
+                    selectedType = state.medicationType,
+                    onTypeSelected = viewModel::setMedicationType
+                )
+                2 -> TimeSelectionStep(timePickerState)
+                3 -> ScheduleConfigStep(
                     config = state.scheduleConfig,
                     onGoodHoursChange = viewModel::setGoodHours,
                     onDizzyHoursChange = viewModel::setDizzyHours,
                     onTooDizzyHoursChange = viewModel::setTooDizzyHours,
                     onFeedbackDelayChange = viewModel::setFeedbackDelayHours
                 )
-                3 -> FoodZoneExplanationStep()
+                4 -> FoodZoneExplanationStep(config = state.medicationType.getFoodZoneConfig())
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -117,7 +123,7 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                if (state.step < 3) {
+                if (state.step < OnboardingViewModel.TOTAL_STEPS - 1) {
                     Button(onClick = { viewModel.nextStep() }) {
                         Text("Next")
                         Spacer(modifier = Modifier.padding(horizontal = 4.dp))
@@ -160,6 +166,96 @@ private fun WelcomeStep() {
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+private fun MedicationTypeStep(
+    selectedType: MedicationType,
+    onTypeSelected: (MedicationType) -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = "Which medication do you take?",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        MedicationType.entries.forEach { type ->
+            MedicationTypeCard(
+                type = type,
+                isSelected = selectedType == type,
+                onClick = { onTypeSelected(type) }
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "This affects the food zone timing recommendations based on absorption rates.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun MedicationTypeCard(
+    type: MedicationType,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = type.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = type.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = when (type) {
+                    MedicationType.INTUNIV -> "Food zones: Red for 3h, Yellow for 5h after intake"
+                    MedicationType.TENEX -> "Food zones: Red for 1.5h, Yellow for 2.5h after intake"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isSelected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                }
+            )
+        }
     }
 }
 
@@ -256,6 +352,6 @@ private fun ScheduleConfigStep(
 }
 
 @Composable
-private fun FoodZoneExplanationStep() {
-    FoodZoneExplanation()
+private fun FoodZoneExplanationStep(config: com.guanfancy.app.domain.model.FoodZoneConfig) {
+    FoodZoneExplanation(config = config)
 }

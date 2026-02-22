@@ -3,7 +3,7 @@ package com.guanfancy.app.ui.screens.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.FoodZone
-import com.guanfancy.app.domain.model.GuanfacineConstants
+import com.guanfancy.app.domain.model.FoodZoneConfig
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.domain.repository.MedicationRepository
@@ -27,6 +27,7 @@ import javax.inject.Inject
 data class DashboardState(
     val nextIntake: MedicationIntake? = null,
     val scheduleConfig: ScheduleConfig = ScheduleConfig.DEFAULT,
+    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT,
     val currentFoodZone: FoodZone = FoodZone.GREEN,
     val timeUntilIntake: Long = 0,
     val isLoading: Boolean = true
@@ -49,12 +50,13 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 medicationRepository.getAllIntakes(),
-                settingsRepository.scheduleConfig
-            ) { intakes, config ->
+                settingsRepository.scheduleConfig,
+                settingsRepository.foodZoneConfig
+            ) { intakes, config, foodZoneConfig ->
                 val nextIntake = intakes.firstOrNull { !it.isCompleted }
                 val now = Clock.System.now()
 
-                val foodZone = calculateFoodZone(now, nextIntake?.scheduledTime)
+                val foodZone = calculateFoodZone(now, nextIntake?.scheduledTime, foodZoneConfig)
 
                 val timeUntilIntake = if (nextIntake != null) {
                     nextIntake.scheduledTime.toEpochMilliseconds() - now.toEpochMilliseconds()
@@ -65,6 +67,7 @@ class DashboardViewModel @Inject constructor(
                 _state.value = DashboardState(
                     nextIntake = nextIntake,
                     scheduleConfig = config,
+                    foodZoneConfig = foodZoneConfig,
                     currentFoodZone = foodZone,
                     timeUntilIntake = timeUntilIntake,
                     isLoading = false
@@ -73,15 +76,15 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun calculateFoodZone(now: Instant, intakeTime: Instant?): FoodZone {
+    private fun calculateFoodZone(now: Instant, intakeTime: Instant?, config: FoodZoneConfig): FoodZone {
         if (intakeTime == null) return FoodZone.GREEN
 
         val diffMillis = intakeTime.toEpochMilliseconds() - now.toEpochMilliseconds()
         val diffHours = diffMillis / (1000 * 60 * 60.0)
 
         return when {
-            diffHours < GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE -> FoodZone.RED
-            diffHours < GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE -> FoodZone.YELLOW
+            diffHours < config.yellowHoursBefore -> FoodZone.RED
+            diffHours < config.greenHoursBefore -> FoodZone.YELLOW
             else -> FoodZone.GREEN
         }
     }

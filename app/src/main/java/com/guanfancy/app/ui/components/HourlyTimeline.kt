@@ -23,7 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.guanfancy.app.domain.model.FoodZone
-import com.guanfancy.app.domain.model.GuanfacineConstants
+import com.guanfancy.app.domain.model.FoodZoneConfig
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.ui.theme.FoodGreen
 import com.guanfancy.app.ui.theme.FoodRed
@@ -42,7 +42,8 @@ data class HourlyTimelineData(
     val date: LocalDate,
     val intakes: List<MedicationIntake>,
     val currentTime: Instant,
-    val previousDayIntake: MedicationIntake? = null
+    val previousDayIntake: MedicationIntake? = null,
+    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT
 )
 
 @Composable
@@ -66,7 +67,7 @@ fun HourlyTimeline(
                 hour = hour,
                 isIntakeHour = hour == intakeHour,
                 isCurrentHour = isToday && hour == currentHour,
-                foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour),
+                foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour, data.foodZoneConfig),
                 intakeMinute = if (hour == intakeHour) {
                     scheduledIntake?.scheduledTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
                 } else 0,
@@ -76,20 +77,25 @@ fun HourlyTimeline(
     }
 }
 
-private fun calculateFoodZone(hour: Int?, intakeHour: Int?, previousIntakeHour: Int?): FoodZone {
+private fun calculateFoodZone(
+    hour: Int?,
+    intakeHour: Int?,
+    previousIntakeHour: Int?,
+    config: FoodZoneConfig
+): FoodZone {
     if (hour == null) return FoodZone.GREEN
 
     val preIntakeZone = if (intakeHour != null) {
         when {
-            hour < intakeHour - GuanfacineConstants.FOOD_GREEN_HOURS_BEFORE -> FoodZone.GREEN
-            hour < intakeHour - GuanfacineConstants.FOOD_YELLOW_HOURS_BEFORE -> FoodZone.YELLOW
+            hour < intakeHour - config.greenHoursBefore -> FoodZone.GREEN
+            hour < intakeHour - config.yellowHoursBefore -> FoodZone.YELLOW
             hour < intakeHour -> FoodZone.RED
             hour == intakeHour -> FoodZone.RED
             else -> {
                 val hoursAfterIntake = hour - intakeHour
                 when {
-                    hoursAfterIntake <= GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
-                    hoursAfterIntake <= GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+                    hoursAfterIntake <= config.redHoursAfter -> FoodZone.RED
+                    hoursAfterIntake <= config.yellowHoursAfter -> FoodZone.YELLOW
                     else -> FoodZone.GREEN
                 }
             }
@@ -99,8 +105,8 @@ private fun calculateFoodZone(hour: Int?, intakeHour: Int?, previousIntakeHour: 
     val postIntakeZone = if (previousIntakeHour != null) {
         val hoursSincePreviousIntake = (24 - previousIntakeHour) + hour
         when {
-            hoursSincePreviousIntake <= GuanfacineConstants.FOOD_RED_HOURS_AFTER -> FoodZone.RED
-            hoursSincePreviousIntake <= GuanfacineConstants.FOOD_YELLOW_HOURS_AFTER -> FoodZone.YELLOW
+            hoursSincePreviousIntake <= config.redHoursAfter -> FoodZone.RED
+            hoursSincePreviousIntake <= config.yellowHoursAfter -> FoodZone.YELLOW
             else -> FoodZone.GREEN
         }
     } else null

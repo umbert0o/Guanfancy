@@ -17,12 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.guanfancy.app.domain.model.FoodZoneConfig
 import com.guanfancy.app.ui.theme.FoodGreen
 import com.guanfancy.app.ui.theme.FoodRed
 import com.guanfancy.app.ui.theme.FoodYellow
 
 @Composable
 fun FoodZoneExplanation(
+    config: FoodZoneConfig = FoodZoneConfig.DEFAULT,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -48,7 +50,7 @@ fun FoodZoneExplanation(
         ZoneCard(
             color = FoodGreen,
             title = "Green Zone",
-            description = "More than 5h before or 5h+ after intake"
+            description = "More than ${config.greenHoursBefore}h before or ${config.yellowHoursAfter}h+ after intake"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -56,7 +58,7 @@ fun FoodZoneExplanation(
         ZoneCard(
             color = FoodYellow,
             title = "Yellow Zone",
-            description = "3-5h before or 3-5h after intake"
+            description = "${config.yellowHoursBefore}-${config.greenHoursBefore}h before or ${config.redHoursAfter}-${config.yellowHoursAfter}h after intake"
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -64,7 +66,7 @@ fun FoodZoneExplanation(
         ZoneCard(
             color = FoodRed,
             title = "Red Zone",
-            description = "Less than 3h before or after intake"
+            description = "Less than ${config.yellowHoursBefore}h before or ${config.redHoursAfter}h after intake"
         )
     }
 }
@@ -98,6 +100,7 @@ private fun ZoneCard(
 
 @Composable
 fun FoodZoneHelpDialog(
+    config: FoodZoneConfig = FoodZoneConfig.DEFAULT,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -108,7 +111,7 @@ fun FoodZoneHelpDialog(
             }
         },
         text = {
-            FoodZoneExplanation()
+            FoodZoneExplanation(config = config)
         }
     )
 }

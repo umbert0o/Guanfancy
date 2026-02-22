@@ -82,7 +82,10 @@ fun CalendarScreen(
     }
 
     if (showHelpDialog) {
-        FoodZoneHelpDialog(onDismiss = { showHelpDialog = false })
+        FoodZoneHelpDialog(
+            config = state.foodZoneConfig,
+            onDismiss = { showHelpDialog = false }
+        )
     }
 }
 

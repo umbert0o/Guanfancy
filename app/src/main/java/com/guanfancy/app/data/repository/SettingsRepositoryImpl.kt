@@ -1,6 +1,8 @@
 package com.guanfancy.app.data.repository
 
 import com.guanfancy.app.data.preferences.AppPreferences
+import com.guanfancy.app.domain.model.FoodZoneConfig
+import com.guanfancy.app.domain.model.MedicationType
 import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +20,12 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override val isOnboardingCompleted: Flow<Boolean> = appPreferences.isOnboardingCompleted
 
+    override val medicationType: Flow<MedicationType> = appPreferences.medicationType
+
+    override val foodZoneConfig: Flow<FoodZoneConfig> = appPreferences.medicationType.map { type ->
+        type.getFoodZoneConfig()
+    }
+
     override val scheduleConfig: Flow<ScheduleConfig> = appPreferences.scheduleConfig
 
     override val currentIntakeTime: Flow<Instant?> = appPreferences.currentIntakeTime.map { epoch ->
@@ -26,6 +34,10 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         appPreferences.setOnboardingCompleted(completed)
+    }
+
+    override suspend fun setMedicationType(type: MedicationType) {
+        appPreferences.setMedicationType(type)
     }
 
     override suspend fun updateScheduleConfig(config: ScheduleConfig) {

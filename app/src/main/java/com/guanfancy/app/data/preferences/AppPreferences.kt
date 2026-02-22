@@ -7,7 +7,9 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.guanfancy.app.domain.model.MedicationType
 import com.guanfancy.app.domain.model.ScheduleConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +26,7 @@ class AppPreferences @Inject constructor(
     private object Keys {
         val WARNING_ACCEPTED = booleanPreferencesKey("warning_accepted")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val MEDICATION_TYPE = stringPreferencesKey("medication_type")
         val GOOD_HOURS = intPreferencesKey("good_hours")
         val DIZZY_HOURS = intPreferencesKey("dizzy_hours")
         val TOO_DIZZY_HOURS = intPreferencesKey("too_dizzy_hours")
@@ -38,6 +41,11 @@ class AppPreferences @Inject constructor(
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
         .map { preferences -> preferences[Keys.ONBOARDING_COMPLETED] ?: false }
+
+    val medicationType: Flow<MedicationType> = context.dataStore.data
+        .map { preferences ->
+            MedicationType.fromString(preferences[Keys.MEDICATION_TYPE])
+        }
 
     val scheduleConfig: Flow<ScheduleConfig> = context.dataStore.data
         .map { preferences ->
@@ -63,6 +71,12 @@ class AppPreferences @Inject constructor(
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[Keys.ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    suspend fun setMedicationType(type: MedicationType) {
+        context.dataStore.edit { preferences ->
+            preferences[Keys.MEDICATION_TYPE] = type.name
         }
     }
 
