@@ -42,11 +42,13 @@ class FeedbackViewModel @Inject constructor(
         viewModelScope.launch {
             val config = settingsRepository.scheduleConfig.first()
             val intake = medicationRepository.getIntakeById(intakeId)
+            val nextScheduledIntake = medicationRepository.getNextScheduledIntake()
 
             _state.update {
                 it.copy(
                     intake = intake,
                     scheduleConfig = config,
+                    nextScheduledTime = nextScheduledIntake?.scheduledTime,
                     isLoading = false
                 )
             }
@@ -54,20 +56,12 @@ class FeedbackViewModel @Inject constructor(
     }
 
     fun selectFeedback(feedback: FeedbackType) {
-        val config = _state.value.scheduleConfig
-        val now = Clock.System.now()
+        val currentNextTime = _state.value.nextScheduledTime ?: return
         val timeZone = TimeZone.currentSystemDefault()
         
-        val nextDefaultTime = IntakeTimingCalculator.calculateNextDefaultTime(
-            now = now,
-            defaultHour = config.defaultIntakeTimeHour,
-            defaultMinute = config.defaultIntakeTimeMinute,
-            timeZone = timeZone
-        )
-        
-        val delayHours = config.getDelayHoursForFeedback(feedback)
+        val delayHours = _state.value.scheduleConfig.getDelayHoursForFeedback(feedback)
         val finalNextTime = IntakeTimingCalculator.applyFeedbackDelay(
-            baseTime = nextDefaultTime,
+            baseTime = currentNextTime,
             delayHours = delayHours,
             timeZone = timeZone
         )

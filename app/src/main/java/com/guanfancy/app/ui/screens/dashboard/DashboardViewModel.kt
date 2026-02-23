@@ -98,7 +98,13 @@ class DashboardViewModel @Inject constructor(
             
             medicationRepository.markIntakeTaken(nextIntake.id, now)
 
-            val nextIntakeTime = IntakeTimingCalculator.calculateNextDefaultTime(
+            val timingResult = IntakeTimingCalculator.calculateForScheduledIntake(
+                now = now,
+                scheduledTime = nextIntake.scheduledTime,
+                timeZone = timeZone
+            )
+
+            val nextIntakeTime = IntakeTimingCalculator.calculateNextIntakeAfterTaking(
                 now = now,
                 defaultHour = config.defaultIntakeTimeHour,
                 defaultMinute = config.defaultIntakeTimeMinute,
@@ -110,13 +116,6 @@ class DashboardViewModel @Inject constructor(
                     scheduledTime = nextIntakeTime,
                     isCompleted = false
                 )
-            )
-
-            val timingResult = IntakeTimingCalculator.calculate(
-                now = now,
-                defaultHour = config.defaultIntakeTimeHour,
-                defaultMinute = config.defaultIntakeTimeMinute,
-                timeZone = timeZone
             )
 
             if (timingResult.needsReschedulePrompt) {
@@ -144,6 +143,17 @@ class DashboardViewModel @Inject constructor(
                 defaultIntakeTimeMinute = localTime.minute
             )
             settingsRepository.updateScheduleConfig(newConfig)
+            
+            val nextIntake = medicationRepository.getNextScheduledIntake()
+            if (nextIntake != null) {
+                val newNextIntakeTime = IntakeTimingCalculator.calculateNextIntakeAfterTaking(
+                    now = now,
+                    defaultHour = localTime.hour,
+                    defaultMinute = localTime.minute,
+                    timeZone = timeZone
+                )
+                medicationRepository.updateScheduledTime(nextIntake.id, newNextIntakeTime)
+            }
             
             val pendingId = _state.value.pendingIntakeId
             if (pendingId != null) {

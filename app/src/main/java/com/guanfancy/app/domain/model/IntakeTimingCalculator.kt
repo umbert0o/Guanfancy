@@ -44,6 +44,21 @@ object IntakeTimingCalculator {
         }
     }
 
+    fun calculateForScheduledIntake(
+        now: Instant,
+        scheduledTime: Instant,
+        timeZone: TimeZone = TimeZone.currentSystemDefault()
+    ): IntakeTimingResult {
+        val windowStart = scheduledTime - ScheduleConfig.RESCHEDULE_WINDOW_HOURS.hours
+        val windowEnd = scheduledTime + ScheduleConfig.RESCHEDULE_WINDOW_HOURS.hours
+        
+        return if (now >= windowStart && now <= windowEnd) {
+            IntakeTimingResult(needsReschedulePrompt = false)
+        } else {
+            IntakeTimingResult(needsReschedulePrompt = true)
+        }
+    }
+
     fun calculateNextDefaultTime(
         now: Instant,
         defaultHour: Int,
@@ -59,6 +74,19 @@ object IntakeTimingCalculator {
         } else {
             todayDefaultInstant.plus(1, DateTimeUnit.DAY, timeZone)
         }
+    }
+
+    fun calculateNextIntakeAfterTaking(
+        now: Instant,
+        defaultHour: Int,
+        defaultMinute: Int,
+        timeZone: TimeZone = TimeZone.currentSystemDefault()
+    ): Instant {
+        val today = now.toLocalDateTime(timeZone).date
+        val defaultTime = LocalTime(defaultHour, defaultMinute)
+        val todayDefaultInstant = defaultTime.atDate(today).toInstant(timeZone)
+        
+        return todayDefaultInstant.plus(1, DateTimeUnit.DAY, timeZone)
     }
 
     fun applyFeedbackDelay(

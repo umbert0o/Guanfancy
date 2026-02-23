@@ -53,13 +53,22 @@ fun HourlyTimeline(
     onHourTap: (Int) -> Unit = {}
 ) {
     val timeZone = TimeZone.currentSystemDefault()
-    val primaryIntake = data.intakes.minByOrNull { it.scheduledTime }
-    val displayTime = if (primaryIntake?.isCompleted == true && primaryIntake.actualTime != null) {
-        primaryIntake.actualTime
-    } else {
-        primaryIntake?.scheduledTime
+    
+    val intakeInfoList = data.intakes.map { intake ->
+        val displayTime = if (intake.isCompleted && intake.actualTime != null) {
+            intake.actualTime
+        } else {
+            intake.scheduledTime
+        }
+        val localDateTime = displayTime.toLocalDateTime(timeZone)
+        IntakeInfo(
+            hour = localDateTime.time.hour,
+            minute = localDateTime.time.minute,
+            isCompleted = intake.isCompleted,
+            displayTime = displayTime
+        )
     }
-    val intakeHour = displayTime?.toLocalDateTime(timeZone)?.time?.hour
+    
     val previousIntakeDisplayTime = if (data.previousDayIntake?.isCompleted == true && data.previousDayIntake.actualTime != null) {
         data.previousDayIntake.actualTime
     } else {
@@ -73,62 +82,90 @@ fun HourlyTimeline(
 
     LazyColumn(modifier = modifier) {
         items((0..23).toList()) { hour ->
+            val intakeAtHour = intakeInfoList.find { it.hour == hour }
             HourRow(
                 hour = hour,
-                isIntakeHour = hour == intakeHour,
-                isCompleted = primaryIntake?.isCompleted == true,
+                isIntakeHour = intakeAtHour != null,
+                isCompleted = intakeAtHour?.isCompleted == true,
                 isCurrentHour = isToday && hour == currentHour,
-                foodZone = calculateFoodZone(hour, intakeHour, previousIntakeHour, data.foodZoneConfig),
-                intakeMinute = if (hour == intakeHour) {
-                    displayTime?.toLocalDateTime(timeZone)?.time?.minute ?: 0
-                } else 0,
+                foodZone = calculateFoodZoneForHour(
+                    hour = hour,
+                    intakeHours = intakeInfoList.map { it.hour },
+                    previousIntakeHour = previousIntakeHour,
+                    config = data.foodZoneConfig
+                ),
+                intakeMinute = intakeAtHour?.minute ?: 0,
                 onTap = { onHourTap(hour) }
             )
         }
     }
 }
 
-private fun calculateFoodZone(
-    hour: Int?,
-    intakeHour: Int?,
+private data class IntakeInfo(
+    val hour: Int,
+    val minute: Int,
+    val isCompleted: Boolean,
+    val displayTime: Instant
+)
+
+private fun calculateFoodZoneForHour(
+    hour: Int,
+    intakeHours: List<Int>,
     previousIntakeHour: Int?,
     config: FoodZoneConfig
 ): FoodZone {
-    if (hour == null) return FoodZone.GREEN
+    if (intakeHours.isEmpty() && previousIntakeHour == null) return FoodZone.GREEN
 
-    val preIntakeZone = if (intakeHour != null) {
-        when {
-            hour < intakeHour - config.greenHoursBefore -> FoodZone.GREEN
-            hour < intakeHour - config.yellowHoursBefore -> FoodZone.YELLOW
-            hour < intakeHour -> FoodZone.RED
-            hour == intakeHour -> FoodZone.RED
-            else -> {
-                val hoursAfterIntake = hour - intakeHour
-                when {
-                    hoursAfterIntake <= config.redHoursAfter -> FoodZone.RED
-                    hoursAfterIntake <= config.yellowHoursAfter -> FoodZone.YELLOW
-                    else -> FoodZone.GREEN
-                }
-            }
-        }
-    } else null
-
-    val postIntakeZone = if (previousIntakeHour != null) {
+    val zones = mutableListOf<FoodZone>()
+    
+    for (intakeHour in intakeHours) {
+        val zone = calculateZoneRelativeToSingleIntake(hour, intakeHour, config)
+        zones.add(zone)
+    }
+    
+    if (previousIntakeHour != null) {
         val hoursSincePreviousIntake = (24 - previousIntakeHour) + hour
-        when {
+        val postZone = when {
             hoursSincePreviousIntake <= config.redHoursAfter -> FoodZone.RED
             hoursSincePreviousIntake <= config.yellowHoursAfter -> FoodZone.YELLOW
             else -> FoodZone.GREEN
         }
-    } else null
-
-    return listOfNotNull(preIntakeZone, postIntakeZone).minByOrNull { zone ->
+        zones.add(postZone)
+    }
+    
+    return zones.minByOrNull { zone ->
         when (zone) {
             FoodZone.RED -> 0
             FoodZone.YELLOW -> 1
             FoodZone.GREEN -> 2
         }
     } ?: FoodZone.GREEN
+}
+
+private fun calculateZoneRelativeToSingleIntake(
+    hour: Int,
+    intakeHour: Int,
+    config: FoodZoneConfig
+): FoodZone {
+    return when {
+        hour < intakeHour -> {
+            val hoursBefore = intakeHour - hour
+            when {
+                hoursBefore <= config.yellowHoursBefore -> FoodZone.RED
+                hoursBefore <= config.greenHoursBefore -> FoodZone.YELLOW
+                else -> FoodZone.GREEN
+            }
+        }
+        hour == intakeHour -> FoodZone.RED
+        else -> {
+            val hoursAfter = hour - intakeHour
+            when {
+                hoursAfter <= config.redHoursAfter -> FoodZone.RED
+                hoursAfter <= config.yellowHoursAfter -> FoodZone.YELLOW
+                else -> FoodZone.GREEN
+            }
+        }
+    }
 }
 
 @Composable

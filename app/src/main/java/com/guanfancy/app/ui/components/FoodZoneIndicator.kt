@@ -1,7 +1,6 @@
 package com.guanfancy.app.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,14 +22,10 @@ import com.guanfancy.app.domain.model.FoodZone
 import com.guanfancy.app.ui.theme.FoodGreen
 import com.guanfancy.app.ui.theme.FoodRed
 import com.guanfancy.app.ui.theme.FoodYellow
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun FoodZoneIndicator(
     zone: FoodZone,
-    nextIntakeTime: Instant?,
     modifier: Modifier = Modifier
 ) {
     val (color, backgroundColor, text, description) = when (zone) {
@@ -80,14 +75,6 @@ fun FoodZoneIndicator(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            nextIntakeTime?.let { time ->
-                val localTime = time.toLocalDateTime(TimeZone.currentSystemDefault())
-                Text(
-                    text = "${localTime.time.hour.toString().padStart(2, '0')}:${localTime.time.minute.toString().padStart(2, '0')}",
-                    style = MaterialTheme.typography.titleLarge
                 )
             }
         }

@@ -105,7 +105,6 @@ fun DashboardScreen(
             ) {
                 FoodZoneIndicator(
                     zone = state.currentFoodZone,
-                    nextIntakeTime = state.nextIntake?.scheduledTime,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -226,7 +225,7 @@ private fun NextIntakeCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "${localTime.date} at ${localTime.time.hour.toString().padStart(2, '0')}:${localTime.time.minute.toString().padStart(2, '0')}",
+                    text = "${localTime.date.dayOfMonth.toString().padStart(2, '0')}.${localTime.date.monthNumber.toString().padStart(2, '0')}. ${localTime.time.hour.toString().padStart(2, '0')}:${localTime.time.minute.toString().padStart(2, '0')}",
                     style = MaterialTheme.typography.headlineSmall
                 )
                 IconButton(onClick = { showDatePicker = true }) {
