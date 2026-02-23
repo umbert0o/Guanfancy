@@ -8,6 +8,9 @@ I've created this project with support of opencode (https://github.com/anomalyco
 ⚠️ **Medical Disclaimer**
 This app is NOT medical advice. It is a personal tracking tool only.
 
+⚠️ **Development Information**
+This app is under active development and may change rapidly.
+
 ### What does this app?
 
 - **Track your Guanfacine intake** - Log when you take your medication with a single tap

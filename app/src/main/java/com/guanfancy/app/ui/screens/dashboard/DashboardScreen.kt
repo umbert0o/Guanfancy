@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,10 +60,16 @@ import kotlin.math.absoluteValue
 fun DashboardScreen(
     onNavigateToCalendar: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToFeedback: (Long) -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    if (state.showRescheduleDialog) {
+        RescheduleDefaultTimeDialog(
+            onConfirm = { viewModel.confirmRescheduleDefaultTime() },
+            onDismiss = { viewModel.declineRescheduleDefaultTime() }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -108,7 +115,11 @@ fun DashboardScreen(
                     NextIntakeCard(
                         scheduledTime = intake.scheduledTime,
                         timeUntilIntake = state.timeUntilIntake,
-                        onTakeMedication = { viewModel.markIntakeTaken() },
+                        onTakeMedication = { 
+                            viewModel.markIntakeTaken(
+                                onShowReschedulePrompt = {}
+                            )
+                        },
                         onReschedule = { newTime -> viewModel.rescheduleNextIntake(newTime) },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -132,6 +143,30 @@ fun DashboardScreen(
             }
         }
     }
+}
+
+@Composable
+private fun RescheduleDefaultTimeDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reschedule default intake time?") },
+        text = {
+            Text("You're taking your medication outside your usual time window. Would you like to update your default intake time to now?")
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Yes, reschedule")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("No, keep current")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.FoodZone
 import com.guanfancy.app.domain.model.FoodZoneCalculator
 import com.guanfancy.app.domain.model.FoodZoneConfig
+import com.guanfancy.app.domain.model.IntakeTimingCalculator
+import com.guanfancy.app.domain.model.IntakeTimingResult
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.model.ScheduleConfig
+import com.guanfancy.app.data.notifications.NotificationHelper
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,11 +17,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import kotlinx.datetime.plus
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 
 data class DashboardState(
@@ -27,13 +32,16 @@ data class DashboardState(
     val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT,
     val currentFoodZone: FoodZone = FoodZone.GREEN,
     val timeUntilIntake: Long = 0,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val showRescheduleDialog: Boolean = false,
+    val pendingIntakeId: Long? = null
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
-    val settingsRepository: SettingsRepository
+    val settingsRepository: SettingsRepository,
+    private val notificationHelper: NotificationHelper
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -73,26 +81,106 @@ class DashboardViewModel @Inject constructor(
                     foodZoneConfig = foodZoneConfig,
                     currentFoodZone = foodZone,
                     timeUntilIntake = timeUntilIntake,
-                    isLoading = false
+                    isLoading = false,
+                    showRescheduleDialog = _state.value.showRescheduleDialog,
+                    pendingIntakeId = _state.value.pendingIntakeId
                 )
             }.collect { }
         }
     }
 
-    fun markIntakeTaken() {
+    fun markIntakeTaken(onShowReschedulePrompt: () -> Unit = {}) {
         viewModelScope.launch {
             val nextIntake = _state.value.nextIntake ?: return@launch
             val now = Clock.System.now()
+            val config = _state.value.scheduleConfig
+            val timeZone = TimeZone.currentSystemDefault()
+            
             medicationRepository.markIntakeTaken(nextIntake.id, now)
 
-            val hoursUntilNext = _state.value.scheduleConfig.goodHours
-            val nextScheduledTime = now.plus(hoursUntilNext, DateTimeUnit.HOUR)
-
+            val nextIntakeTime = IntakeTimingCalculator.calculateNextDefaultTime(
+                now = now,
+                defaultHour = config.defaultIntakeTimeHour,
+                defaultMinute = config.defaultIntakeTimeMinute,
+                timeZone = timeZone
+            )
+            
             medicationRepository.insertIntake(
                 MedicationIntake(
-                    scheduledTime = nextScheduledTime,
+                    scheduledTime = nextIntakeTime,
                     isCompleted = false
                 )
+            )
+
+            val timingResult = IntakeTimingCalculator.calculate(
+                now = now,
+                defaultHour = config.defaultIntakeTimeHour,
+                defaultMinute = config.defaultIntakeTimeMinute,
+                timeZone = timeZone
+            )
+
+            if (timingResult.needsReschedulePrompt) {
+                _state.update { 
+                    it.copy(
+                        showRescheduleDialog = true,
+                        pendingIntakeId = nextIntake.id
+                    )
+                }
+                onShowReschedulePrompt()
+            } else {
+                notificationHelper.scheduleFeedbackReminder(nextIntake.id, config.feedbackDelayHours)
+            }
+        }
+    }
+
+    fun confirmRescheduleDefaultTime() {
+        viewModelScope.launch {
+            val now = Clock.System.now()
+            val timeZone = TimeZone.currentSystemDefault()
+            val localTime = now.toLocalDateTime(timeZone).time
+            
+            val newConfig = _state.value.scheduleConfig.copy(
+                defaultIntakeTimeHour = localTime.hour,
+                defaultIntakeTimeMinute = localTime.minute
+            )
+            settingsRepository.updateScheduleConfig(newConfig)
+            
+            val pendingId = _state.value.pendingIntakeId
+            if (pendingId != null) {
+                notificationHelper.scheduleFeedbackReminder(pendingId, newConfig.feedbackDelayHours)
+            }
+            
+            _state.update { 
+                it.copy(
+                    showRescheduleDialog = false,
+                    pendingIntakeId = null
+                )
+            }
+        }
+    }
+
+    fun declineRescheduleDefaultTime() {
+        viewModelScope.launch {
+            val pendingId = _state.value.pendingIntakeId
+            val config = _state.value.scheduleConfig
+            if (pendingId != null) {
+                notificationHelper.scheduleFeedbackReminder(pendingId, config.feedbackDelayHours)
+            }
+            
+            _state.update { 
+                it.copy(
+                    showRescheduleDialog = false,
+                    pendingIntakeId = null
+                )
+            }
+        }
+    }
+
+    fun dismissRescheduleDialog() {
+        _state.update { 
+            it.copy(
+                showRescheduleDialog = false,
+                pendingIntakeId = null
             )
         }
     }

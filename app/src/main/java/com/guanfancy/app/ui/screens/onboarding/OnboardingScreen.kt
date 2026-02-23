@@ -99,9 +99,6 @@ fun OnboardingScreen(
                 2 -> TimeSelectionStep(timePickerState)
                 3 -> ScheduleConfigStep(
                     config = state.scheduleConfig,
-                    onGoodHoursChange = viewModel::setGoodHours,
-                    onDizzyHoursChange = viewModel::setDizzyHours,
-                    onTooDizzyHoursChange = viewModel::setTooDizzyHours,
                     onFeedbackDelayChange = viewModel::setFeedbackDelayHours
                 )
                 4 -> FoodZoneExplanationStep(config = state.medicationType.getFoodZoneConfig())
@@ -283,9 +280,6 @@ private fun TimeSelectionStep(timePickerState: androidx.compose.material3.TimePi
 @Composable
 private fun ScheduleConfigStep(
     config: com.guanfancy.app.domain.model.ScheduleConfig,
-    onGoodHoursChange: (Int) -> Unit,
-    onDizzyHoursChange: (Int) -> Unit,
-    onTooDizzyHoursChange: (Int) -> Unit,
     onFeedbackDelayChange: (Int) -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -302,42 +296,6 @@ private fun ScheduleConfigStep(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = config.goodHours.toString(),
-            onValueChange = { newValue ->
-                newValue.toIntOrNull()?.let { onGoodHoursChange(it) }
-            },
-            label = { Text("Hours until next intake (Good)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = config.dizzyHours.toString(),
-            onValueChange = { newValue ->
-                newValue.toIntOrNull()?.let { onDizzyHoursChange(it) }
-            },
-            label = { Text("Hours until next intake (Dizzy)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = config.tooDizzyHours.toString(),
-            onValueChange = { newValue ->
-                newValue.toIntOrNull()?.let { onTooDizzyHoursChange(it) }
-            },
-            label = { Text("Hours until next intake (Too dizzy)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = config.feedbackDelayHours.toString(),

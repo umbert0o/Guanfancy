@@ -26,7 +26,9 @@ import com.guanfancy.app.ui.screens.dashboard.DashboardViewModel
 import com.guanfancy.app.ui.screens.feedback.FeedbackViewModel
 import com.guanfancy.app.ui.screens.onboarding.OnboardingViewModel
 import com.guanfancy.app.ui.screens.settings.SettingsViewModel
+import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.first
+import kotlin.reflect.typeOf
 
 @Composable
 fun GuanfancyNavHost(
@@ -71,10 +73,7 @@ fun GuanfancyNavHost(
         composable<Screen.Dashboard> {
             DashboardScreen(
                 onNavigateToCalendar = { navController.navigate(Screen.Calendar) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings) },
-                onNavigateToFeedback = { intakeId ->
-                    navController.navigate(Screen.Feedback(intakeId))
-                }
+                onNavigateToSettings = { navController.navigate(Screen.Settings) }
             )
         }
 
@@ -103,7 +102,9 @@ fun GuanfancyNavHost(
         }
 
         composable<Screen.Feedback> { backStackEntry ->
+            val feedback = backStackEntry.toRoute<Screen.Feedback>()
             FeedbackScreen(
+                intakeId = feedback.intakeId,
                 onFeedbackComplete = { navController.popBackStack() }
             )
         }

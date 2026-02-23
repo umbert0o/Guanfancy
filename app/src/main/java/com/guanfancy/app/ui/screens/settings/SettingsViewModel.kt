@@ -66,18 +66,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateGoodHours(hours: Int) {
-        _state.update { it.copy(scheduleConfig = it.scheduleConfig.copy(goodHours = hours)) }
+    fun updateDefaultIntakeHour(hour: Int) {
+        _state.update { it.copy(scheduleConfig = it.scheduleConfig.copy(defaultIntakeTimeHour = hour)) }
         saveConfig()
     }
 
-    fun updateDizzyHours(hours: Int) {
-        _state.update { it.copy(scheduleConfig = it.scheduleConfig.copy(dizzyHours = hours)) }
-        saveConfig()
-    }
-
-    fun updateTooDizzyHours(hours: Int) {
-        _state.update { it.copy(scheduleConfig = it.scheduleConfig.copy(tooDizzyHours = hours)) }
+    fun updateDefaultIntakeMinute(minute: Int) {
+        _state.update { it.copy(scheduleConfig = it.scheduleConfig.copy(defaultIntakeTimeMinute = minute)) }
         saveConfig()
     }
 

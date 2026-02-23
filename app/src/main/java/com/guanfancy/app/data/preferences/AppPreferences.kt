@@ -27,9 +27,6 @@ class AppPreferences @Inject constructor(
         val WARNING_ACCEPTED = booleanPreferencesKey("warning_accepted")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val MEDICATION_TYPE = stringPreferencesKey("medication_type")
-        val GOOD_HOURS = intPreferencesKey("good_hours")
-        val DIZZY_HOURS = intPreferencesKey("dizzy_hours")
-        val TOO_DIZZY_HOURS = intPreferencesKey("too_dizzy_hours")
         val FEEDBACK_DELAY_HOURS = intPreferencesKey("feedback_delay_hours")
         val DEFAULT_INTAKE_HOUR = intPreferencesKey("default_intake_hour")
         val DEFAULT_INTAKE_MINUTE = intPreferencesKey("default_intake_minute")
@@ -50,9 +47,6 @@ class AppPreferences @Inject constructor(
     val scheduleConfig: Flow<ScheduleConfig> = context.dataStore.data
         .map { preferences ->
             ScheduleConfig(
-                goodHours = preferences[Keys.GOOD_HOURS] ?: ScheduleConfig.DEFAULT.goodHours,
-                dizzyHours = preferences[Keys.DIZZY_HOURS] ?: ScheduleConfig.DEFAULT.dizzyHours,
-                tooDizzyHours = preferences[Keys.TOO_DIZZY_HOURS] ?: ScheduleConfig.DEFAULT.tooDizzyHours,
                 feedbackDelayHours = preferences[Keys.FEEDBACK_DELAY_HOURS] ?: ScheduleConfig.DEFAULT.feedbackDelayHours,
                 defaultIntakeTimeHour = preferences[Keys.DEFAULT_INTAKE_HOUR] ?: ScheduleConfig.DEFAULT.defaultIntakeTimeHour,
                 defaultIntakeTimeMinute = preferences[Keys.DEFAULT_INTAKE_MINUTE] ?: ScheduleConfig.DEFAULT.defaultIntakeTimeMinute
@@ -82,9 +76,6 @@ class AppPreferences @Inject constructor(
 
     suspend fun updateScheduleConfig(config: ScheduleConfig) {
         context.dataStore.edit { preferences ->
-            preferences[Keys.GOOD_HOURS] = config.goodHours
-            preferences[Keys.DIZZY_HOURS] = config.dizzyHours
-            preferences[Keys.TOO_DIZZY_HOURS] = config.tooDizzyHours
             preferences[Keys.FEEDBACK_DELAY_HOURS] = config.feedbackDelayHours
             preferences[Keys.DEFAULT_INTAKE_HOUR] = config.defaultIntakeTimeHour
             preferences[Keys.DEFAULT_INTAKE_MINUTE] = config.defaultIntakeTimeMinute

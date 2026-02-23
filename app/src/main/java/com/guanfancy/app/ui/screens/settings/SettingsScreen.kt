@@ -1,5 +1,6 @@
 package com.guanfancy.app.ui.screens.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -113,41 +114,44 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = state.scheduleConfig.goodHours.toString(),
-                onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { viewModel.updateGoodHours(it) }
-                },
-                label = { Text("Hours until next intake (Good feedback)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = state.scheduleConfig.defaultIntakeTimeHour.toString(),
+                    onValueChange = { newValue ->
+                        newValue.toIntOrNull()?.let { 
+                            if (it in 0..23) viewModel.updateDefaultIntakeHour(it)
+                        }
+                    },
+                    label = { Text("Hour (0-23)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+
+                OutlinedTextField(
+                    value = state.scheduleConfig.defaultIntakeTimeMinute.toString(),
+                    onValueChange = { newValue ->
+                        newValue.toIntOrNull()?.let { 
+                            if (it in 0..59) viewModel.updateDefaultIntakeMinute(it)
+                        }
+                    },
+                    label = { Text("Minute (0-59)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = state.scheduleConfig.dizzyHours.toString(),
-                onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { viewModel.updateDizzyHours(it) }
-                },
-                label = { Text("Hours until next intake (Dizzy feedback)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                text = "Default intake time: ${state.scheduleConfig.defaultIntakeTimeHour.toString().padStart(2, '0')}:${state.scheduleConfig.defaultIntakeTimeMinute.toString().padStart(2, '0')}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = state.scheduleConfig.tooDizzyHours.toString(),
-                onValueChange = { newValue ->
-                    newValue.toIntOrNull()?.let { viewModel.updateTooDizzyHours(it) }
-                },
-                label = { Text("Hours until next intake (Too dizzy feedback)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = state.scheduleConfig.feedbackDelayHours.toString(),

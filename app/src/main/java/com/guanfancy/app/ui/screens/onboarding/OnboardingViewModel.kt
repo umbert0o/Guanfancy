@@ -54,24 +54,6 @@ class OnboardingViewModel @Inject constructor(
         _state.value = _state.value.copy(selectedMinute = minute)
     }
 
-    fun setGoodHours(hours: Int) {
-        _state.value = _state.value.copy(
-            scheduleConfig = _state.value.scheduleConfig.copy(goodHours = hours)
-        )
-    }
-
-    fun setDizzyHours(hours: Int) {
-        _state.value = _state.value.copy(
-            scheduleConfig = _state.value.scheduleConfig.copy(dizzyHours = hours)
-        )
-    }
-
-    fun setTooDizzyHours(hours: Int) {
-        _state.value = _state.value.copy(
-            scheduleConfig = _state.value.scheduleConfig.copy(tooDizzyHours = hours)
-        )
-    }
-
     fun setFeedbackDelayHours(hours: Int) {
         _state.value = _state.value.copy(
             scheduleConfig = _state.value.scheduleConfig.copy(feedbackDelayHours = hours)

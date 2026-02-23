@@ -3,6 +3,7 @@ package com.guanfancy.app.ui.screens.feedback
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.FeedbackType
+import com.guanfancy.app.domain.model.IntakeTimingCalculator
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.domain.repository.MedicationRepository
@@ -15,9 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
-import kotlinx.datetime.plus
+import kotlinx.datetime.TimeZone
 import javax.inject.Inject
 
 data class FeedbackState(
@@ -54,13 +54,28 @@ class FeedbackViewModel @Inject constructor(
     }
 
     fun selectFeedback(feedback: FeedbackType) {
-        val hoursUntilNext = _state.value.scheduleConfig.getHoursForFeedback(feedback)
-        val nextTime = Clock.System.now().plus(hoursUntilNext, DateTimeUnit.HOUR)
+        val config = _state.value.scheduleConfig
+        val now = Clock.System.now()
+        val timeZone = TimeZone.currentSystemDefault()
+        
+        val nextDefaultTime = IntakeTimingCalculator.calculateNextDefaultTime(
+            now = now,
+            defaultHour = config.defaultIntakeTimeHour,
+            defaultMinute = config.defaultIntakeTimeMinute,
+            timeZone = timeZone
+        )
+        
+        val delayHours = config.getDelayHoursForFeedback(feedback)
+        val finalNextTime = IntakeTimingCalculator.applyFeedbackDelay(
+            baseTime = nextDefaultTime,
+            delayHours = delayHours,
+            timeZone = timeZone
+        )
 
         _state.update {
             it.copy(
                 selectedFeedback = feedback,
-                nextScheduledTime = nextTime
+                nextScheduledTime = finalNextTime
             )
         }
     }
@@ -79,12 +94,10 @@ class FeedbackViewModel @Inject constructor(
                 feedbackTime = Clock.System.now()
             )
 
-            medicationRepository.insertIntake(
-                MedicationIntake(
-                    scheduledTime = nextTime,
-                    isCompleted = false
-                )
-            )
+            val nextIntake = medicationRepository.getNextScheduledIntake()
+            if (nextIntake != null) {
+                medicationRepository.updateScheduledTime(nextIntake.id, nextTime)
+            }
 
             _state.update { it.copy(isSubmitting = false) }
             onComplete()
