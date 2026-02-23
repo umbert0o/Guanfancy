@@ -9,7 +9,7 @@ I've created this project with support of opencode (https://github.com/anomalyco
 This app is NOT medical advice. It is a personal tracking tool only.
 
 ⚠️ **Development Information**
-This app is under active development and may change rapidly.
+This app is under active development and may change rapidly. Bugs are to be expected.
 
 ### What does this app?
 
