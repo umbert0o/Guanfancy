@@ -8,6 +8,8 @@ import kotlinx.datetime.Instant
 interface MedicationRepository {
     fun getAllIntakes(): Flow<List<MedicationIntake>>
     fun getIntakesBetween(start: Instant, end: Instant): Flow<List<MedicationIntake>>
+    fun getNextScheduledIntakeFlow(): Flow<MedicationIntake?>
+    fun getLastCompletedIntakeFlow(): Flow<MedicationIntake?>
     suspend fun getIntakeById(id: Long): MedicationIntake?
     suspend fun getLatestIntake(): MedicationIntake?
     suspend fun getNextScheduledIntake(): MedicationIntake?

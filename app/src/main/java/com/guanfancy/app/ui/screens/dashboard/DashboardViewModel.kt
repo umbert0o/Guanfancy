@@ -3,7 +3,6 @@ package com.guanfancy.app.ui.screens.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.FoodZone
-import com.guanfancy.app.domain.model.FoodZoneCalculator
 import com.guanfancy.app.domain.model.FoodZoneConfig
 import com.guanfancy.app.domain.model.IntakeTimingCalculator
 import com.guanfancy.app.domain.model.IntakeTimingResult
@@ -12,12 +11,12 @@ import com.guanfancy.app.domain.model.ScheduleConfig
 import com.guanfancy.app.data.notifications.NotificationHelper
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
+import com.guanfancy.app.domain.service.FoodZoneService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -41,7 +40,8 @@ data class DashboardState(
 class DashboardViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
     val settingsRepository: SettingsRepository,
-    private val notificationHelper: NotificationHelper
+    private val notificationHelper: NotificationHelper,
+    private val foodZoneService: FoodZoneService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -54,20 +54,12 @@ class DashboardViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             combine(
-                medicationRepository.getAllIntakes(),
+                medicationRepository.getNextScheduledIntakeFlow(),
                 settingsRepository.scheduleConfig,
-                settingsRepository.foodZoneConfig
-            ) { intakes, config, foodZoneConfig ->
-                val nextIntake = intakes.firstOrNull { !it.isCompleted }
-                val lastCompletedIntake = intakes.firstOrNull { it.isCompleted && it.actualTime != null }
+                settingsRepository.foodZoneConfig,
+                foodZoneService.getCurrentZone()
+            ) { nextIntake, config, foodZoneConfig, currentFoodZone ->
                 val now = Clock.System.now()
-
-                val foodZone = FoodZoneCalculator.calculate(
-                    now = now,
-                    lastTakenTime = lastCompletedIntake?.actualTime,
-                    nextScheduledTime = nextIntake?.scheduledTime,
-                    config = foodZoneConfig
-                )
 
                 val timeUntilIntake = if (nextIntake != null) {
                     nextIntake.scheduledTime.toEpochMilliseconds() - now.toEpochMilliseconds()
@@ -79,7 +71,7 @@ class DashboardViewModel @Inject constructor(
                     nextIntake = nextIntake,
                     scheduleConfig = config,
                     foodZoneConfig = foodZoneConfig,
-                    currentFoodZone = foodZone,
+                    currentFoodZone = currentFoodZone,
                     timeUntilIntake = timeUntilIntake,
                     isLoading = false,
                     showRescheduleDialog = _state.value.showRescheduleDialog,

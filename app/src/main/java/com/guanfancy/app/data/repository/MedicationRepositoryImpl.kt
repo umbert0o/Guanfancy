@@ -32,6 +32,14 @@ class MedicationRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getNextScheduledIntakeFlow(): Flow<MedicationIntake?> {
+        return intakeDao.getNextScheduledIntakeFlow().map { it?.toDomain() }
+    }
+
+    override fun getLastCompletedIntakeFlow(): Flow<MedicationIntake?> {
+        return intakeDao.getLastCompletedIntakeFlow().map { it?.toDomain() }
+    }
+
     override suspend fun getIntakeById(id: Long): MedicationIntake? {
         return intakeDao.getIntakeById(id)?.toDomain()
     }

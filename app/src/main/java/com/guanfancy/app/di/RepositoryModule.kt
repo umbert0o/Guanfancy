@@ -5,6 +5,8 @@ import com.guanfancy.app.data.repository.MedicationRepositoryImpl
 import com.guanfancy.app.data.repository.SettingsRepositoryImpl
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
+import com.guanfancy.app.domain.service.FoodZoneService
+import com.guanfancy.app.domain.service.FoodZoneServiceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -26,4 +28,10 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         settingsRepositoryImpl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFoodZoneService(
+        foodZoneServiceImpl: FoodZoneServiceImpl
+    ): FoodZoneService
 }

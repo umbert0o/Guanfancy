@@ -14,10 +14,8 @@ object FoodZoneCalculator {
         val beforeZone = calculateBeforeZone(now, nextScheduledTime, config)
 
         return when {
-            afterZone == FoodZone.RED -> FoodZone.RED
-            afterZone == FoodZone.YELLOW -> FoodZone.YELLOW
-            beforeZone == FoodZone.RED -> FoodZone.RED
-            beforeZone == FoodZone.YELLOW -> FoodZone.YELLOW
+            afterZone == FoodZone.RED || beforeZone == FoodZone.RED -> FoodZone.RED
+            afterZone == FoodZone.YELLOW || beforeZone == FoodZone.YELLOW -> FoodZone.YELLOW
             else -> FoodZone.GREEN
         }
     }

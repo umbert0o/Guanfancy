@@ -25,6 +25,12 @@ interface IntakeDao {
     @Query("SELECT * FROM medication_intakes WHERE isCompleted = 0 ORDER BY scheduledTimeEpoch ASC LIMIT 1")
     suspend fun getNextScheduledIntake(): IntakeEntity?
 
+    @Query("SELECT * FROM medication_intakes WHERE isCompleted = 0 ORDER BY scheduledTimeEpoch ASC LIMIT 1")
+    fun getNextScheduledIntakeFlow(): Flow<IntakeEntity?>
+
+    @Query("SELECT * FROM medication_intakes WHERE isCompleted = 1 AND actualTimeEpoch IS NOT NULL ORDER BY actualTimeEpoch DESC LIMIT 1")
+    fun getLastCompletedIntakeFlow(): Flow<IntakeEntity?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIntake(intake: IntakeEntity): Long
 
