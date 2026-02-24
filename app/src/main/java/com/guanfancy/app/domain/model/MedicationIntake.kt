@@ -10,5 +10,6 @@ data class MedicationIntake(
     val feedback: FeedbackType? = null,
     val feedbackTime: Instant? = null,
     val nextScheduledTime: Instant? = null,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val source: IntakeSource = IntakeSource.SCHEDULED
 )

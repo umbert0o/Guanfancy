@@ -3,6 +3,7 @@ package com.guanfancy.app.ui.screens.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.guanfancy.app.domain.model.FoodZoneConfig
+import com.guanfancy.app.domain.model.IntakeSource
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
@@ -18,6 +19,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atTime
 import kotlinx.datetime.minus
@@ -31,7 +33,12 @@ data class CalendarState(
     val intakes: List<MedicationIntake> = emptyList(),
     val previousDayIntake: MedicationIntake? = null,
     val currentTime: Instant = Clock.System.now(),
-    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT
+    val foodZoneConfig: FoodZoneConfig = FoodZoneConfig.DEFAULT,
+    val showAddDialog: Boolean = false,
+    val showEditDialog: Boolean = false,
+    val showDeleteConfirmDialog: Boolean = false,
+    val selectedHour: Int? = null,
+    val selectedIntake: MedicationIntake? = null
 ) {
     fun toHourlyTimelineData(): HourlyTimelineData {
         return HourlyTimelineData(
@@ -72,6 +79,104 @@ class CalendarViewModel @Inject constructor(
     fun selectDate(date: LocalDate) {
         _state.update { it.copy(selectedDate = date) }
         loadIntakesForDate(date)
+    }
+
+    fun showAddManualIntakeDialog(hour: Int) {
+        _state.update {
+            it.copy(
+                showAddDialog = true,
+                selectedHour = hour
+            )
+        }
+    }
+
+    fun hideAddDialog() {
+        _state.update {
+            it.copy(
+                showAddDialog = false,
+                selectedHour = null
+            )
+        }
+    }
+
+    fun showEditManualIntakeDialog(intake: MedicationIntake) {
+        if (intake.source != IntakeSource.MANUAL) return
+        _state.update {
+            it.copy(
+                showEditDialog = true,
+                selectedIntake = intake
+            )
+        }
+    }
+
+    fun hideEditDialog() {
+        _state.update {
+            it.copy(
+                showEditDialog = false,
+                selectedIntake = null
+            )
+        }
+    }
+
+    fun showDeleteConfirmDialog() {
+        _state.update {
+            it.copy(
+                showEditDialog = false,
+                showDeleteConfirmDialog = true
+            )
+        }
+    }
+
+    fun hideDeleteConfirmDialog() {
+        _state.update {
+            it.copy(
+                showDeleteConfirmDialog = false,
+                selectedIntake = null
+            )
+        }
+    }
+
+    fun addManualIntake() {
+        val selectedDate = _state.value.selectedDate
+        val hour = _state.value.selectedHour ?: return
+        val timeZone = TimeZone.currentSystemDefault()
+        val intakeTime = selectedDate.atTime(hour, 0).toInstant(timeZone)
+
+        viewModelScope.launch {
+            val manualIntake = MedicationIntake(
+                scheduledTime = intakeTime,
+                actualTime = intakeTime,
+                isCompleted = true,
+                source = IntakeSource.MANUAL
+            )
+            medicationRepository.insertIntake(manualIntake)
+            hideAddDialog()
+        }
+    }
+
+    fun updateManualIntake(time: LocalTime) {
+        val intake = _state.value.selectedIntake ?: return
+        val selectedDate = _state.value.selectedDate
+        val timeZone = TimeZone.currentSystemDefault()
+        val newTime = selectedDate.atTime(time.hour, time.minute).toInstant(timeZone)
+
+        viewModelScope.launch {
+            val updatedIntake = intake.copy(
+                scheduledTime = newTime,
+                actualTime = newTime
+            )
+            medicationRepository.updateIntake(updatedIntake)
+            hideEditDialog()
+        }
+    }
+
+    fun deleteManualIntake() {
+        val intake = _state.value.selectedIntake ?: return
+
+        viewModelScope.launch {
+            medicationRepository.deleteIntake(intake)
+            hideDeleteConfirmDialog()
+        }
     }
 
     private fun loadIntakesForDate(date: LocalDate) {

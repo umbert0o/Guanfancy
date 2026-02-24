@@ -2,6 +2,7 @@ package com.guanfancy.app.domain.service
 
 import com.guanfancy.app.domain.model.FoodZone
 import com.guanfancy.app.domain.model.FoodZoneConfig
+import com.guanfancy.app.domain.model.IntakeSource
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.repository.MedicationRepository
 import com.guanfancy.app.domain.repository.SettingsRepository
@@ -215,12 +216,54 @@ class FoodZoneServiceTest {
         assertEquals(FoodZone.YELLOW, resultWithShorterConfig)
     }
 
+    @Test
+    fun whenManualIntakeOnly_doesNotAffectZone() = runTest {
+        val now = Clock.System.now()
+        val manualIntakeTime = now - 2.hours
+        mockMedicationRepository.lastCompletedIntake = null
+        mockMedicationRepository.manualIntake = createManualIntake(manualIntakeTime)
+        mockMedicationRepository.nextScheduledIntake = null
+
+        val result = service.getCurrentZone().first()
+
+        assertEquals(FoodZone.GREEN, result)
+    }
+
+    @Test
+    fun whenBothManualAndScheduledIntakeExist_onlyScheduledAffectsZone() = runTest {
+        val now = Clock.System.now()
+        val scheduledIntakeTime = now - 4.hours
+        val manualIntakeTime = now - 1.hours
+        mockMedicationRepository.lastCompletedIntake = createCompletedIntake(scheduledIntakeTime)
+        mockMedicationRepository.manualIntake = createManualIntake(manualIntakeTime)
+        mockMedicationRepository.nextScheduledIntake = null
+
+        val result = service.getCurrentZone().first()
+
+        assertEquals(FoodZone.YELLOW, result)
+    }
+
+    @Test
+    fun whenManualIntakeIsMoreRecent_thaScheduledIntake_zoneBasedOnScheduled() = runTest {
+        val now = Clock.System.now()
+        val scheduledIntakeTime = now - 6.hours
+        val manualIntakeTime = now - 1.hours
+        mockMedicationRepository.lastCompletedIntake = createCompletedIntake(scheduledIntakeTime)
+        mockMedicationRepository.manualIntake = createManualIntake(manualIntakeTime)
+        mockMedicationRepository.nextScheduledIntake = null
+
+        val result = service.getCurrentZone().first()
+
+        assertEquals(FoodZone.GREEN, result)
+    }
+
     private fun createCompletedIntake(actualTime: Instant): MedicationIntake {
         return MedicationIntake(
             id = 1L,
             scheduledTime = actualTime,
             actualTime = actualTime,
-            isCompleted = true
+            isCompleted = true,
+            source = IntakeSource.SCHEDULED
         )
     }
 
@@ -229,7 +272,18 @@ class FoodZoneServiceTest {
             id = 2L,
             scheduledTime = scheduledTime,
             actualTime = null,
-            isCompleted = false
+            isCompleted = false,
+            source = IntakeSource.SCHEDULED
+        )
+    }
+
+    private fun createManualIntake(actualTime: Instant): MedicationIntake {
+        return MedicationIntake(
+            id = 3L,
+            scheduledTime = actualTime,
+            actualTime = actualTime,
+            isCompleted = true,
+            source = IntakeSource.MANUAL
         )
     }
 
@@ -237,6 +291,7 @@ class FoodZoneServiceTest {
         private val _lastCompletedIntake = MutableStateFlow<MedicationIntake?>(null)
         private val _nextScheduledIntake = MutableStateFlow<MedicationIntake?>(null)
         var allIntakes: List<MedicationIntake> = emptyList()
+        var manualIntake: MedicationIntake? = null
 
         var lastCompletedIntake: MedicationIntake?
             get() = _lastCompletedIntake.value
@@ -246,12 +301,12 @@ class FoodZoneServiceTest {
             get() = _nextScheduledIntake.value
             set(value) { _nextScheduledIntake.value = value }
 
-        override fun getAllIntakes() = flowOf(allIntakes)
-        override fun getIntakesBetween(start: Instant, end: Instant) = flowOf(allIntakes)
+        override fun getAllIntakes() = flowOf(allIntakes + listOfNotNull(manualIntake))
+        override fun getIntakesBetween(start: Instant, end: Instant) = flowOf(allIntakes + listOfNotNull(manualIntake))
         override fun getNextScheduledIntakeFlow() = _nextScheduledIntake
         override fun getLastCompletedIntakeFlow() = _lastCompletedIntake
-        override suspend fun getIntakeById(id: Long) = allIntakes.find { it.id == id }
-        override suspend fun getLatestIntake() = allIntakes.maxByOrNull { it.scheduledTime }
+        override suspend fun getIntakeById(id: Long) = (allIntakes + listOfNotNull(manualIntake)).find { it.id == id }
+        override suspend fun getLatestIntake() = (allIntakes + listOfNotNull(manualIntake)).maxByOrNull { it.scheduledTime }
         override suspend fun getNextScheduledIntake() = nextScheduledIntake
         override suspend fun insertIntake(intake: MedicationIntake) = 0L
         override suspend fun updateIntake(intake: MedicationIntake) {}

@@ -4,6 +4,7 @@ import com.guanfancy.app.data.local.dao.IntakeDao
 import com.guanfancy.app.data.local.entity.toDomain
 import com.guanfancy.app.data.local.entity.toEntity
 import com.guanfancy.app.domain.model.FeedbackType
+import com.guanfancy.app.domain.model.IntakeSource
 import com.guanfancy.app.domain.model.MedicationIntake
 import com.guanfancy.app.domain.repository.MedicationRepository
 import kotlinx.coroutines.flow.Flow

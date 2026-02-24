@@ -1,6 +1,7 @@
 package com.guanfancy.app.data.local.entity
 
 import com.guanfancy.app.domain.model.FeedbackType
+import com.guanfancy.app.domain.model.IntakeSource
 import com.guanfancy.app.domain.model.MedicationIntake
 import kotlinx.datetime.Instant
 
@@ -12,7 +13,8 @@ fun IntakeEntity.toDomain(): MedicationIntake {
         feedback = feedbackType?.let { FeedbackType.valueOf(it) },
         feedbackTime = feedbackTimeEpoch?.let { Instant.fromEpochMilliseconds(it) },
         nextScheduledTime = nextScheduledTimeEpoch?.let { Instant.fromEpochMilliseconds(it) },
-        isCompleted = isCompleted
+        isCompleted = isCompleted,
+        source = IntakeSource.valueOf(source)
     )
 }
 
@@ -24,6 +26,7 @@ fun MedicationIntake.toEntity(): IntakeEntity {
         feedbackType = feedback?.name,
         feedbackTimeEpoch = feedbackTime?.toEpochMilliseconds(),
         nextScheduledTimeEpoch = nextScheduledTime?.toEpochMilliseconds(),
-        isCompleted = isCompleted
+        isCompleted = isCompleted,
+        source = source.name
     )
 }

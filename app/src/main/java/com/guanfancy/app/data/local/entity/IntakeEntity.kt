@@ -3,6 +3,7 @@ package com.guanfancy.app.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.guanfancy.app.domain.model.FeedbackType
+import com.guanfancy.app.domain.model.IntakeSource
 
 @Entity(tableName = "medication_intakes")
 data class IntakeEntity(
@@ -13,5 +14,6 @@ data class IntakeEntity(
     val feedbackType: String? = null,
     val feedbackTimeEpoch: Long? = null,
     val nextScheduledTimeEpoch: Long? = null,
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val source: String = IntakeSource.SCHEDULED.name
 )

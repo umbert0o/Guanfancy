@@ -25,10 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.guanfancy.app.ui.components.AddManualIntakeDialog
+import com.guanfancy.app.ui.components.DeleteManualIntakeConfirmationDialog
+import com.guanfancy.app.ui.components.EditManualIntakeDialog
 import com.guanfancy.app.ui.components.FoodZoneHelpDialog
 import com.guanfancy.app.ui.components.HourlyTimeline
 import com.guanfancy.app.ui.components.TimelineLegend
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +80,9 @@ fun CalendarScreen(
 
             HourlyTimeline(
                 data = state.toHourlyTimelineData(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onHourLongPress = { hour -> viewModel.showAddManualIntakeDialog(hour) },
+                onIntakeTap = { intake -> viewModel.showEditManualIntakeDialog(intake) }
             )
         }
     }
@@ -85,6 +91,39 @@ fun CalendarScreen(
         FoodZoneHelpDialog(
             config = state.foodZoneConfig,
             onDismiss = { showHelpDialog = false }
+        )
+    }
+
+    if (state.showAddDialog) {
+        val hour = state.selectedHour
+        if (hour != null) {
+            AddManualIntakeDialog(
+                hour = hour,
+                onDismiss = { viewModel.hideAddDialog() },
+                onConfirm = { viewModel.addManualIntake() }
+            )
+        }
+    }
+
+    if (state.showEditDialog) {
+        val intake = state.selectedIntake
+        if (intake != null) {
+            val intakeTime = intake.actualTime ?: intake.scheduledTime
+            val localTime = intakeTime.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault()).time
+            
+            EditManualIntakeDialog(
+                intakeTime = localTime,
+                onDismiss = { viewModel.hideEditDialog() },
+                onUpdate = { time -> viewModel.updateManualIntake(time) },
+                onDelete = { viewModel.showDeleteConfirmDialog() }
+            )
+        }
+    }
+
+    if (state.showDeleteConfirmDialog) {
+        DeleteManualIntakeConfirmationDialog(
+            onDismiss = { viewModel.hideDeleteConfirmDialog() },
+            onConfirm = { viewModel.deleteManualIntake() }
         )
     }
 }
