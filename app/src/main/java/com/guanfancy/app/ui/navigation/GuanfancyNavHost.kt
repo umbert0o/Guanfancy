@@ -4,8 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,15 +37,31 @@ import kotlin.reflect.typeOf
 @Composable
 fun GuanfancyNavHost(
     navController: NavHostController = rememberNavController(),
-    settingsRepository: SettingsRepository = hiltViewModel<DashboardViewModel>().settingsRepository
+    settingsRepository: SettingsRepository = hiltViewModel<DashboardViewModel>().settingsRepository,
+    deepLinkIntakeId: Long? = null
 ) {
+    var pendingDeepLink by remember { mutableStateOf(deepLinkIntakeId) }
+
     val startDestination by produceState<Screen?>(initialValue = null) {
         val warningAccepted = settingsRepository.isWarningAccepted.first()
         val onboardingCompleted = settingsRepository.isOnboardingCompleted.first()
         value = when {
             !warningAccepted -> Screen.Warning
             !onboardingCompleted -> Screen.Onboarding
+            deepLinkIntakeId != null -> {
+                pendingDeepLink = null
+                Screen.Feedback(deepLinkIntakeId)
+            }
             else -> Screen.Dashboard
+        }
+    }
+
+    LaunchedEffect(pendingDeepLink) {
+        if (pendingDeepLink != null && navController.currentDestination?.route != null) {
+            navController.navigate(Screen.Feedback(pendingDeepLink!!)) {
+                launchSingleTop = true
+            }
+            pendingDeepLink = null
         }
     }
 
